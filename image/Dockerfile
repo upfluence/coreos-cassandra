@@ -19,6 +19,7 @@ RUN echo "@community ${COMMUNITY_REPO}" >> /etc/apk/repositories && \
 ENV LOCAL_JMX no
 
 ADD run.sh /usr/share/cassandra/run.sh
+ADD jars/mx4j-tools.jar /usr/share/cassandra/lib/mx4j-tools.jar
 ADD config/cassandra.yaml.tmpl /usr/share/cassandra/config/cassandra.yaml.tmpl
 
 RUN chmod +x ${CASSANDRA_HOME}/run.sh && \
