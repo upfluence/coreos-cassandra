@@ -11,16 +11,19 @@ RUN echo "@community ${COMMUNITY_REPO}" >> /etc/apk/repositories && \
     apk add --update openjdk8@community curl su-exec && \
     rm -rf /var/cache/apk/* && \
     curl -sL ${ENVTPL_REPO} > /usr/bin/envtmpl && \
-    chmod +x /usr/bin/envtmpl
+    chmod +x /usr/bin/envtmpl &&\
+    curl -s ${CASSANDRA_REPO} | tar xz -C /usr/share && ln -s \
+    /usr/share/apache-cassandra-${CASSANDRA_VERSION} /usr/share/cassandra && \
+    rm  ${CASSANDRA_HOME}/conf/cassandra.yaml
 
-RUN curl -s ${CASSANDRA_REPO} | tar xz -C /usr/share && ln -s \
-  /usr/share/apache-cassandra-${CASSANDRA_VERSION} /usr/share/cassandra && \
-  rm  ${CASSANDRA_HOME}/conf/cassandra.yaml
 ENV LOCAL_JMX no
+
 ADD run.sh /usr/share/cassandra/run.sh
 ADD config/cassandra.yaml.tmpl /usr/share/cassandra/config/cassandra.yaml.tmpl
-RUN chmod +x ${CASSANDRA_HOME}/run.sh
-RUN sed -i -e "s/com.sun.management.jmxremote.authenticate=true/com.sun.management.jmxremote.authenticate=false/" ${CASSANDRA_HOME}/conf/cassandra-env.sh
+
+RUN chmod +x ${CASSANDRA_HOME}/run.sh && \
+   sed -i -e "s/com.sun.management.jmxremote.authenticate=true/com.sun.management.jmxremote.authenticate=false/" ${CASSANDRA_HOME}/conf/cassandra-env.sh
+
 VOLUME /usr/share/cassandra/data
 EXPOSE 7000 7001 7199 9042 9160
 
