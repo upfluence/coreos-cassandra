@@ -1,7 +1,7 @@
 FROM alpine:3.3
 
 ENV ENVTMPL_VERSION 0.0.1
-ENV CASSANDRA_VERSION 3.0.5
+ENV CASSANDRA_VERSION 3.0.8
 ENV JOLOKIA_VERSION 1.3.3
 ENV CASSANDRA_HOME /usr/share/cassandra
 ENV COMMUNITY_REPO http://nl.alpinelinux.org/alpine/edge/community
