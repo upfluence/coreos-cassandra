@@ -1,4 +1,4 @@
-FROM alpine:3.3
+FROM alpine:3.4
 
 ENV ENVTMPL_VERSION 0.0.1
 ENV CASSANDRA_VERSION 3.0.8
@@ -10,24 +10,26 @@ ENV CASSANDRA_REPO http://apache.claz.org/cassandra/${CASSANDRA_VERSION}/apache-
 ENV JOLOKIA_REPO http://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-jvm/1.3.3/jolokia-jvm-${JOLOKIA_VERSION}-agent.jar
 
 RUN echo "@community ${COMMUNITY_REPO}" >> /etc/apk/repositories && \
-    apk add --update openjdk8@community curl su-exec && \
+    apk add --update openjdk8@community curl su-exec python python-dev unzip && \
     rm -rf /var/cache/apk/* && \
     curl -sL ${ENVTPL_REPO} > /usr/bin/envtmpl && \
     chmod +x /usr/bin/envtmpl &&\
     curl -s ${CASSANDRA_REPO} | tar xz -C /usr/share && ln -s \
     /usr/share/apache-cassandra-${CASSANDRA_VERSION} /usr/share/cassandra && \
     curl -sL ${JOLOKIA_REPO} > ${CASSANDRA_HOME}/lib/jolokia-jvm-agent.jar && \
-    rm  ${CASSANDRA_HOME}/conf/cassandra.yaml
+    rm  ${CASSANDRA_HOME}/conf/cassandra.yaml && \
+    curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip" && \
+    unzip awscli-bundle.zip && \
+    ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws && \
+    mkdir -p ~/.aws && rm -rf awscli-bundle.zip awscli-bundle
 
 ENV LOCAL_JMX no
 
+
 ADD run.sh /usr/share/cassandra/run.sh
-ADD config/cassandra.yaml.tmpl ${CASSANDRA_HOME}/config/cassandra.yaml.tmpl
+ADD aws/config ~/.aws/config
+ADD aws/credentials.tmpl ~/.aws/credentials.tmpl
 
-RUN chmod +x ${CASSANDRA_HOME}/run.sh && \
-   sed -i -e "s/com.sun.management.jmxremote.authenticate=true/com.sun.management.jmxremote.authenticate=false/" ${CASSANDRA_HOME}/conf/cassandra-env.sh
-
-VOLUME /usr/share/cassandra/data
-EXPOSE 7000 7001 7199 9042 9160
+RUN chmod +x ${CASSANDRA_HOME}/run.sh
 
 CMD ["/usr/share/cassandra/run.sh"]
