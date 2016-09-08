@@ -12,14 +12,15 @@ RUN echo "@community ${COMMUNITY_REPO}" >> /etc/apk/repositories && \
     apk add --update openjdk8@community curl su-exec python python-dev py-pip && \
     rm -rf /var/cache/apk/* && \
     curl -s ${CASSANDRA_REPO} | tar xz -C /usr/share && ln -s \
-    /usr/share/apache-cassandra-${CASSANDRA_VERSION} /usr/share/cassandra && \
+    /usr/share/apache-cassandra-${CASSANDRA_VERSION} ${CASSANDRA_HOME} && \
     curl -sL ${JOLOKIA_REPO} > ${CASSANDRA_HOME}/lib/jolokia-jvm-agent.jar && \
     rm  ${CASSANDRA_HOME}/conf/cassandra.yaml && \
     pip install awscli
 
 
-ADD run.sh /usr/share/cassandra/run.sh
+ADD run.sh ${CASSANDRA_HOME}/run.sh
+ADD restore.sh ${CASSANDRA_HOME}/restore.sh
 
-RUN chmod +x ${CASSANDRA_HOME}/run.sh
+RUN chmod +x ${CASSANDRA_HOME}/run.sh ${CASSANDRA_HOME}/restore.sh
 
 CMD ["/usr/share/cassandra/run.sh"]

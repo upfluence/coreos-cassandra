@@ -2,26 +2,27 @@
 set -e
 
 
-TAG=`date +%s`
+TAG=`date +%y-%m-%d-%H`
 BUCKET=s3://${AWS_BUCKET}
 MAX_SAVES=15
+
+DATA_PATH=$CASSANDRA_HOME/data/data
 
 
 /usr/share/cassandra/bin/nodetool -h ${CASSANDRA_IP_ADDRESS} snapshot --tag ${TAG} ${KEYSPACES}
 
 for keyspace in ${KEYSPACES}; do
-  for dir in $CASSANDRA_HOME/data/data/${keyspace}/*/snapshot
-  do
-      echo "COPYING ${dir}/${TAG} TO s3"
-      aws s3 cp --recursive ${dir}/${TAG} ${BUCKET}/${CASSANDRA_NODE_NUMBER}/${dir} ${keyspace}
-      nodetool clearsnapshot -t ${TAG}
+  for table in ${DATA_PATH}/${keyspace}/*; do
+    aws s3 cp --recursive ${table}/snapshots/${TAG} ${BUCKET}/${TAG}/${CASSANDRA_NODE_NUMBER}${table#${DATA_PATH}}
 
-      # DELETE OLD BACKUPS
-      NUM_SAVE=`aws s3 ls ${BUCKET}/${CASSANDRA_NODE_NUMBER}/${dir} | wc -l`
-      if [ ${NUM_SAVE} -ge ${MAX_SAVES} ]; then
-        OLDEST=`aws s3 ls ${BUCKET}/${CASSANDRA_NODE_NUMBER}/${dir} | awk 'NR==1'`
+    # DELETE OLD BACKUPS
+    NUM_SAVE=`aws s3 ls ${BUCKET} | wc -l`
+    if [ ${NUM_SAVE} -ge ${MAX_SAVES} ]; then
+      OLDEST=`aws s3 ls ${BUCKET} 2> /dev/null | head -n 1`
 
-        aws s3 rm --recursive ${dir}/${OLDEST} ${BUCKET}/${CASSANDRA_NODE_NUMBER}/${dir}/${OLDEST}
-      fi
+      aws s3 rm --recursive ${BUCKET}/${TAG}/${CASSANDRA_NODE_NUMBER}/${table}/${OLDEST}
+    fi
   done
+
+  ${CASSANDRA_HOME}/bin/nodetool -h ${CASSANDRA_IP_ADDRESS} clearsnapshot -t ${TAG} -- ${keyspace}
 done
