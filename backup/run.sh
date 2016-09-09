@@ -1,15 +1,13 @@
 #!/bin/sh
 set -e
 
-
 TAG=`date +%y-%m-%d-%H`
 BUCKET=s3://${AWS_BUCKET}
 MAX_SAVES=15
 
 DATA_PATH=$CASSANDRA_HOME/data/data
 
-
-/usr/share/cassandra/bin/nodetool -h ${CASSANDRA_IP_ADDRESS} snapshot --tag ${TAG} ${KEYSPACES}
+${CASSANDRA_HOME}/bin/nodetool -h ${CASSANDRA_IP_ADDRESS} snapshot --tag ${TAG} ${KEYSPACES}
 
 for keyspace in ${KEYSPACES}; do
   for table in ${DATA_PATH}/${keyspace}/*; do

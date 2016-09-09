@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-
 BUCKET=s3://${AWS_BUCKET}
 
 DATA_PATH=${CASSANDRA_HOME}/data/data
