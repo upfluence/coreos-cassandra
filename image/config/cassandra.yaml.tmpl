@@ -68,7 +68,7 @@ max_hints_delivery_threads: 2
 
 # Directory where Cassandra should store hints.
 # If not set, the default directory is $CASSANDRA_HOME/data/hints.
-# hints_directory: /usr/local/var/lib/cassandra/hints
+hints_directory: /hints
 
 # How often hints should be flushed from the internal buffers to disk.
 # Will *not* trigger fsync.
@@ -208,7 +208,7 @@ commit_failure_policy: stop
 # NOTE: if you reduce the size, you may not get you hottest keys loaded on startup.
 #
 # Default value is empty to make it "auto" (min(5% of Heap (in MB), 100MB)). Set to 0 to disable key cache.
-key_cache_size_in_mb:
+key_cache_size_in_mb: 300
 
 # Duration in seconds after which Cassandra should
 # save the key cache. Caches are saved to saved_caches_directory as
@@ -240,7 +240,7 @@ key_cache_save_period: 14400
 # headroom for OS block level cache. Do never allow your system to swap.
 #
 # Default value is 0, to disable row caching.
-row_cache_size_in_mb: 0
+row_cache_size_in_mb: 150
 
 # Duration in seconds after which Cassandra should save the row cache.
 # Caches are saved to saved_caches_directory as specified in this configuration file.
@@ -250,7 +250,7 @@ row_cache_size_in_mb: 0
 # has limited use.
 #
 # Default is 0 to disable saving the row cache.
-row_cache_save_period: 0
+row_cache_save_period: 7200
 
 # Number of keys from the row cache to save.
 # Specify 0 (which is the default), meaning all keys are going to be saved
@@ -269,7 +269,7 @@ row_cache_save_period: 0
 #
 # Default value is empty to make it "auto" (min(2.5% of Heap (in MB), 50MB)). Set to 0 to disable counter cache.
 # NOTE: if you perform counter deletes and rely on low gcgs, you should disable the counter cache.
-counter_cache_size_in_mb:
+counter_cache_size_in_mb: 150
 
 # Duration in seconds after which Cassandra should
 # save the counter cache (keys only). Caches are saved to saved_caches_directory as
