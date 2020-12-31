@@ -2,7 +2,7 @@ FROM alpine:3.3
 
 ENV ENVTMPL_VERSION=0.0.1 \
     CASSANDRA_VERSION=3.0.15 \
-    PROMETHEUS_EXPORTER=0.8 \
+    PROMETHEUS_EXPORTER=0.14.0 \
     LOGGER_LEVEL=INFO \
     CASSANDRA_HOME=/usr/share/cassandra \
     COMMUNITY_REPO=http://nl.alpinelinux.org/alpine/edge/community
