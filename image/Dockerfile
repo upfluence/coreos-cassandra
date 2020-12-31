@@ -3,6 +3,7 @@ FROM alpine:3.3
 ENV ENVTMPL_VERSION=0.0.1 \
     CASSANDRA_VERSION=3.0.15 \
     PROMETHEUS_EXPORTER=0.8 \
+    LOGGER_LEVEL=INFO \
     CASSANDRA_HOME=/usr/share/cassandra \
     COMMUNITY_REPO=http://nl.alpinelinux.org/alpine/edge/community
 
@@ -21,10 +22,11 @@ RUN curl -s ${CASSANDRA_REPO} | tar xz -C /usr/share && ln -s \
     /usr/share/apache-cassandra-${CASSANDRA_VERSION} /usr/share/cassandra
 
 RUN curl -sL ${EXPORTER_REPO} > ${CASSANDRA_HOME}/lib/exporter.jar && \
-    rm  ${CASSANDRA_HOME}/conf/cassandra.yaml && mkdir /hints
+    rm  ${CASSANDRA_HOME}/conf/cassandra.yaml && \
+    rm  ${CASSANDRA_HOME}/conf/logback.xml && \
+    mkdir /hints
 
 ADD run.sh /usr/share/cassandra/run.sh
-ADD config/logback.xml ${CASSANDRA_HOME}/conf/logback.xml
 
 COPY config/* ${CASSANDRA_HOME}/config/
 

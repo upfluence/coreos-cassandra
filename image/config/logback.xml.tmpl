@@ -61,13 +61,13 @@
   <appender name="LogbackMetrics" class="com.codahale.metrics.logback.InstrumentedAppender" />
    -->
 
-  <root level="INFO">
+  <root level="{{.LOGGER_LEVEL}}">
     <appender-ref ref="STDOUT" />
     <!--
     <appender-ref ref="LogbackMetrics" />
     -->
   </root>
 
-  <logger name="org.apache.cassandra" level="INFO"/>
-  <logger name="com.thinkaurelius.thrift" level="ERROR"/>
+  <logger name="org.apache.cassandra" level="{{.LOGGER_LEVEL}}"/>
+  <logger name="com.thinkaurelius.thrift" level="{{.LOGGER_LEVEL}}"/>
 </configuration>
