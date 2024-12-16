@@ -1,18 +1,16 @@
-FROM alpine:3.3
+FROM alpine:edge
 
-ENV ENVTMPL_VERSION=0.0.1 \
-    CASSANDRA_VERSION=3.0.23 \
-    PROMETHEUS_EXPORTER=0.14.0 \
+ENV ENVTMPL_VERSION=0.0.2 \
+    CASSANDRA_VERSION=4.0.15 \
+    PROMETHEUS_EXPORTER=0.19.0 \
     LOGGER_LEVEL=INFO \
-    CASSANDRA_HOME=/usr/share/cassandra \
-    COMMUNITY_REPO=http://nl.alpinelinux.org/alpine/edge/community
+    CASSANDRA_HOME=/usr/share/cassandra
 
 ENV ENVTPL_REPO=https://github.com/upfluence/envtmpl/releases/download/v${ENVTMPL_VERSION}/envtmpl-linux-amd64-${ENVTMPL_VERSION} \
-    CASSANDRA_REPO=http://apache.claz.org/cassandra/${CASSANDRA_VERSION}/apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz \
+    CASSANDRA_REPO=http://dlcdn.apache.org/cassandra/${CASSANDRA_VERSION}/apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz \
     EXPORTER_REPO=https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/${PROMETHEUS_EXPORTER}/jmx_prometheus_javaagent-${PROMETHEUS_EXPORTER}.jar
 
-RUN echo "@community ${COMMUNITY_REPO}" >> /etc/apk/repositories && \
-    apk add --update openjdk8@community curl su-exec && \
+RUN apk add --update openjdk11 curl su-exec && \
     rm -rf /var/cache/apk/*
 
 RUN curl -sL ${ENVTPL_REPO} > /usr/bin/envtmpl && \
@@ -24,7 +22,7 @@ RUN curl -s ${CASSANDRA_REPO} | tar xz -C /usr/share && ln -s \
 RUN curl -sL ${EXPORTER_REPO} > ${CASSANDRA_HOME}/lib/exporter.jar && \
     rm  ${CASSANDRA_HOME}/conf/cassandra.yaml && \
     rm  ${CASSANDRA_HOME}/conf/logback.xml && \
-    mkdir /hints
+    mkdir /hints && mkdir ${CASSANDRA_HOME}/logs
 
 ADD run.sh /usr/share/cassandra/run.sh
 

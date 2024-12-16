@@ -7,4 +7,4 @@ echo "JVM_OPTS=\"\$JVM_OPTS -Djava.rmi.server.hostname=${CASSANDRA_IP_ADDRESS}\"
 echo "JVM_OPTS=\"\$JVM_OPTS -javaagent:${CASSANDRA_HOME}/lib/exporter.jar=7777:${CASSANDRA_HOME}/config/prometheus.yml\"" >> ${CASSANDRA_HOME}/conf/cassandra-env.sh
 echo "${CASSANDRA_IP_ADDRESS} `hostname`" > /etc/hosts
 
-/usr/share/cassandra/bin/cassandra -f
+exec /usr/share/cassandra/bin/cassandra -f -R
