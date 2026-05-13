@@ -1,5 +1,4 @@
-<configuration scan="true">
-  <jmxConfigurator />
+<configuration scan="true" scanPeriod="60 seconds">
 
   <!-- No shutdown hook; we run it ourselves in StorageService after shutdown -->
 
@@ -10,37 +9,49 @@
       <level>INFO</level>
     </filter>
     <file>${cassandra.logdir}/system.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>${cassandra.logdir}/system.log.%i.zip</fileNamePattern>
-      <minIndex>1</minIndex>
-      <maxIndex>20</maxIndex>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${cassandra.logdir}/system.log.%d{yyyy-MM-dd}.%i.zip</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>20MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>5</maxHistory>
     </rollingPolicy>
-    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-      <maxFileSize>20MB</maxFileSize>
-    </triggeringPolicy>
     <encoder>
-      <pattern>%-5level [%thread] %date{ISO8601} %F:%L - %msg%n</pattern>
+      <pattern>%-5level [%thread] %date{"yyyy-MM-dd'T'HH:mm:ss,SSS", UTC} %F:%L - %msg%n</pattern>
     </encoder>
   </appender>
 
-  <!-- DEBUGLOG rolling file appender to debug.log (all levels) -->
+  <!-- STDOUT console appender to stdout -->
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+    <encoder>
+      <pattern>%-5level %date{HH:mm:ss.SSS} %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- DEBUGLOG rolling file appender to debug.log (DEBUG level, always on) -->
+  <!-- Cassandra's slow-query logger always references debug.log; without this
+       appender the file is never created and slow-query details are lost. -->
 
   <appender name="DEBUGLOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>DEBUG</level>
+    </filter>
     <file>${cassandra.logdir}/debug.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>${cassandra.logdir}/debug.log.%i.zip</fileNamePattern>
-      <minIndex>1</minIndex>
-      <maxIndex>20</maxIndex>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${cassandra.logdir}/debug.log.%d{yyyy-MM-dd}.%i.zip</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>20MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>5</maxHistory>
     </rollingPolicy>
-    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-      <maxFileSize>20MB</maxFileSize>
-    </triggeringPolicy>
     <encoder>
-      <pattern>%-5level [%thread] %date{ISO8601} %F:%L - %msg%n</pattern>
+      <pattern>%-5level [%thread] %date{"yyyy-MM-dd'T'HH:mm:ss,SSS", UTC} %F:%L - %msg%n</pattern>
     </encoder>
   </appender>
-
-  <!-- ASYNCLOG assynchronous appender to debug.log (all levels) -->
 
   <appender name="ASYNCDEBUGLOG" class="ch.qos.logback.classic.AsyncAppender">
     <queueSize>1024</queueSize>
@@ -49,25 +60,18 @@
     <appender-ref ref="DEBUGLOG" />
   </appender>
 
-  <!-- STDOUT console appender to stdout (INFO level) -->
-
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%-5level %date{HH:mm:ss,SSS} %msg%n</pattern>
-    </encoder>
-  </appender>
-
-  <!-- Uncomment bellow and corresponding appender-ref to activate logback metrics
-  <appender name="LogbackMetrics" class="com.codahale.metrics.logback.InstrumentedAppender" />
-   -->
-
   <root level="{{.LOGGER_LEVEL}}">
+    <appender-ref ref="SYSTEMLOG" />
     <appender-ref ref="STDOUT" />
-    <!--
-    <appender-ref ref="LogbackMetrics" />
-    -->
+    <appender-ref ref="ASYNCDEBUGLOG" />
   </root>
 
   <logger name="org.apache.cassandra" level="{{.LOGGER_LEVEL}}"/>
-  <logger name="com.thinkaurelius.thrift" level="{{.LOGGER_LEVEL}}"/>
+
+  <!-- Always route slow-query debug details to debug.log, even at INFO root level.
+       Cassandra emits slow-query details at DEBUG via SlowQueryLogger; without this
+       override they are suppressed when LOGGER_LEVEL=INFO. -->
+  <logger name="org.apache.cassandra.utils.SlowQueryLogger" level="DEBUG" additivity="false">
+    <appender-ref ref="ASYNCDEBUGLOG" />
+  </logger>
 </configuration>

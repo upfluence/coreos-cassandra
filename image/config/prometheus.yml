@@ -1,14 +1,140 @@
 ---
 lowercaseOutputLabelNames: true
 lowercaseOutputName: true
+whitelistObjectNames:
+  - "org.apache.cassandra.metrics:type=ClientRequest,*"
+  - "org.apache.cassandra.metrics:type=Table,*"
+  - "org.apache.cassandra.metrics:type=ThreadPools,*"
+  - "org.apache.cassandra.metrics:type=Compaction,*"
+  - "org.apache.cassandra.metrics:type=Cache,*"
+  - "org.apache.cassandra.metrics:type=Connection,*"
+  - "org.apache.cassandra.metrics:type=Streaming,*"
+  - "org.apache.cassandra.metrics:type=Keyspace,*"
+  - "org.apache.cassandra.metrics:type=Storage,*"
+
+blacklistObjectNames:
+  # ColumnFamily is an alias for Table — avoid double-counting
+  - "org.apache.cassandra.metrics:type=ColumnFamily,*"
+  # System keyspaces add cardinality with no operational value
+  - "org.apache.cassandra.metrics:type=Table,keyspace=system,*"
+  - "org.apache.cassandra.metrics:type=Table,keyspace=system_schema,*"
+  - "org.apache.cassandra.metrics:type=Table,keyspace=system_distributed,*"
+  - "org.apache.cassandra.metrics:type=Table,keyspace=system_traces,*"
+  - "org.apache.cassandra.metrics:type=Keyspace,keyspace=system,*"
+  - "org.apache.cassandra.metrics:type=Keyspace,keyspace=system_schema,*"
+  - "org.apache.cassandra.metrics:type=Keyspace,keyspace=system_distributed,*"
+  - "org.apache.cassandra.metrics:type=Keyspace,keyspace=system_traces,*"
+  # These are extremely slow to compute and rarely useful
+  - "org.apache.cassandra.metrics:*,name=TotalDiskSpaceUsed"
+  - "org.apache.cassandra.metrics:*,name=EstimatedPartitionCount"
+  # All histograms and percentile attributes are high-cardinality and slow
+  - "org.apache.cassandra.metrics:type=Table,*,name=*Histogram"
+
 rules:
-- pattern: org.apache.cassandra.metrics<type=(Connection|Streaming), scope=(\S*), name=(\S*)><>(Count|Value)
-  name: cassandra_$1_$3
-  labels:
-    address: "$2"
-- pattern: org.apache.cassandra.metrics<type=(\S*)(?:, ((?!scope)\S*)=(\S*))?(?:, scope=(\S*))?,
-    name=(\S*)><>(Count|Value)
-  name: cassandra_$1_$5
-  labels:
-    "$1": "$4"
-    "$2": "$3"
+  # -------------------------------------------------------------------------
+  # ClientRequest Latency — count and total only
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=ClientRequest, scope=(\S*), name=(\S*Latency)><>(Count)
+    name: cassandra_clientrequest_$2_count
+    type: COUNTER
+    labels:
+      request_type: "$1"
+
+  - pattern: org.apache.cassandra.metrics<type=ClientRequest, scope=(\S*), name=(\S*TotalLatency)><>(Count)
+    name: cassandra_clientrequest_$2_total
+    type: COUNTER
+    labels:
+      request_type: "$1"
+
+  - pattern: org.apache.cassandra.metrics<type=ClientRequest, scope=(\S*), name=(\S*)><>(Count|Value)
+    name: cassandra_clientrequest_$2
+    type: GAUGE
+    labels:
+      request_type: "$1"
+
+  # -------------------------------------------------------------------------
+  # Table Latency — count and total only
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=Table, keyspace=(\S*), scope=(\S*), name=(\S*Latency)><>(Count)
+    name: cassandra_table_$3_count
+    type: COUNTER
+    labels:
+      keyspace: "$1"
+      table: "$2"
+
+  - pattern: org.apache.cassandra.metrics<type=Table, keyspace=(\S*), scope=(\S*), name=(\S*TotalLatency)><>(Count)
+    name: cassandra_table_$3_total
+    type: COUNTER
+    labels:
+      keyspace: "$1"
+      table: "$2"
+
+  # -------------------------------------------------------------------------
+  # Table Gauge / Counter metrics
+  # Covers: PendingCompactions, LiveSSTableCount, BloomFilterFalseRatio,
+  #         PercentRepaired, BloomFilterOffHeapMemoryUsed, LiveDiskSpaceUsed, etc.
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=Table, keyspace=(\S*), scope=(\S*), name=(\S*)><>(Value)
+    name: cassandra_table_$3
+    type: GAUGE
+    labels:
+      keyspace: "$1"
+      table: "$2"
+
+  - pattern: org.apache.cassandra.metrics<type=Table, keyspace=(\S*), scope=(\S*), name=(\S*)><>(Count)
+    name: cassandra_table_$3
+    type: COUNTER
+    labels:
+      keyspace: "$1"
+      table: "$2"
+
+  # -------------------------------------------------------------------------
+  # ThreadPool metrics
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=ThreadPools, path=(\S*), scope=(\S*), name=(\S*)><>(Value|Count)
+    name: cassandra_threadpools_$3
+    type: GAUGE
+    labels:
+      path: "$1"
+      pool: "$2"
+
+  # -------------------------------------------------------------------------
+  # Compaction metrics
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=Compaction, name=(\S*)><>(Value|Count)
+    name: cassandra_compaction_$1
+    type: GAUGE
+
+  # -------------------------------------------------------------------------
+  # Cache metrics (KeyCache, CounterCache — RowCache is zeroed out)
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=Cache, scope=(\S*), name=(\S*)><>(Value|Count)
+    name: cassandra_cache_$2
+    type: GAUGE
+    labels:
+      cache: "$1"
+
+  # -------------------------------------------------------------------------
+  # Storage metrics (Load, Exceptions, TotalHints, etc.)
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=Storage, name=(\S*)><>(Value|Count)
+    name: cassandra_storage_$1
+    type: GAUGE
+
+  # -------------------------------------------------------------------------
+  # Connection / Streaming
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=(Connection|Streaming), scope=(\S*), name=(\S*)><>(Count|Value)
+    name: cassandra_$1_$3
+    type: GAUGE
+    labels:
+      address: "$2"
+
+  # -------------------------------------------------------------------------
+  # Keyspace aggregated metrics
+  # -------------------------------------------------------------------------
+  - pattern: org.apache.cassandra.metrics<type=Keyspace, keyspace=(\S*), name=(\S*)><>(Value|Count)
+    name: cassandra_keyspace_$2
+    type: GAUGE
+    labels:
+      keyspace: "$1"
